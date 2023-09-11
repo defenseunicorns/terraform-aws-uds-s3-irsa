@@ -38,10 +38,10 @@ variable "irsa_iam_permissions_boundary" {
   default     = ""
 }
 
-variable "eks_oidc_provider_arn" {
-  description = "EKS OIDC Provider ARN e.g., arn:aws:iam::<ACCOUNT-ID>:oidc-provider/<var.eks_oidc_provider>"
-  type        = string
-}
+# variable "eks_oidc_provider_arn" {
+#   description = "EKS OIDC Provider ARN e.g., arn:aws:iam::<ACCOUNT-ID>:oidc-provider/<var.eks_oidc_provider>"
+#   type        = string
+# }
 
 variable "tags" {
   description = "A map of tags to apply to all resources"
@@ -62,10 +62,10 @@ variable "kubernetes_service_account" {
 }
 
 // TODO: Evaluate whether we need this to be a variable
-variable "policy_name_prefix" {
-  description = "IAM Policy name prefix"
+variable "irsa_policy_name" {
+  description = "IRSA IAM Policy name"
   type        = string
-  default     = "irsa-policy"
+  default     = "s3-irsa-policy"
 }
 
 variable "dynamodb_enabled" {
@@ -114,4 +114,16 @@ variable "key_owner_arns" {
   description = "List of ARNs of the AWS accounts that should have access to the KMS key"
   type        = list(string)
   default     = []
+}
+
+variable "state_bucket_name" {
+  description = "Name of the S3 bucket to store Terraform state"
+  type        = string
+  default     = ""
+}
+
+variable "eks_state_key" {
+  description = "Path to the EKS terraform state file inside the S3 bucket"
+  type        = string
+  default     = ""
 }

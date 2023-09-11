@@ -1,12 +1,39 @@
-locals {
-  eks_oidc_issuer_url = replace(var.eks_oidc_provider_arn, "/^(.*provider/)/", "")
-  kms_key_alias_name_prefix  = "alias/${var.name_prefix}-${lower(random_id.default.hex)}"
-  generate_kms = var.create_kms_key ? 1 : 0
+data "aws_eks_cluster" "existing" {
+  name = var.name_prefix
 }
 
 data "aws_caller_identity" "current" {}
 
 data "aws_partition" "current" {}
+
+data "aws_region" "current" {}
+
+data "terraform_remote_state" "eks_cluster" {
+  backend = "s3"
+  config = {
+    bucket = var.state_bucket_name
+    key    = var.eks_state_key
+    region = data.aws_region.current.name
+  }
+}
+
+terraform {
+  backend "s3" {
+  }
+}
+
+locals {
+  # eks_oidc_issuer_url = replace(var.eks_oidc_provider_arn, "/^(.*provider/)/", "")
+  kms_key_alias_name_prefix  = "alias/${var.name_prefix}-${lower(random_id.default.hex)}"
+  generate_kms = var.create_kms_key ? 1 : 0
+  oidc_url_without_protocol = substr(data.aws_eks_cluster.existing.identity[0].oidc[0].issuer, 8, -1)
+  oidc_arn                  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_url_without_protocol}"
+  irsa_iam_role_name            = "${data.terraform_remote_state.eks_cluster.outputs.eks_cluster_name}-${var.irsa_iam_role_name}"
+  irsa_iam_permissions_boundary = var.iam_role_permissions_boundary
+  # eks_oidc_provider_arn         = data.terraform_remote_state.eks_cluster.outputs.eks_oidc_provider_arn
+
+}
+
 
 #####################################################
 #################### S3 Bucket ######################
@@ -80,14 +107,14 @@ data "aws_iam_policy_document" "irsa_policy" {
 
 resource "aws_iam_policy" "irsa_policy" {
   description = "IAM Policy for IRSA"
-  name_prefix = "${var.name_prefix}-${var.policy_name_prefix}"
+  name_prefix = "${var.name_prefix}-${var.irsa_policy_name}"
   policy      = data.aws_iam_policy_document.irsa_policy.json
 }
 
 resource "aws_iam_role" "irsa" {
   count = var.irsa_iam_policies != null ? 1 : 0
 
-  name        = try(coalesce(var.irsa_iam_role_name, format("%s-%s-%s", var.name_prefix, trim(var.kubernetes_service_account, "-*"), "irsa")), null)
+  name        = try(coalesce(local.irsa_iam_role_name, format("%s-%s-%s", var.name_prefix, trim(var.kubernetes_service_account, "-*"), "irsa")), null)
   description = "AWS IAM Role for the Kubernetes service account ${var.kubernetes_service_account}."
   assume_role_policy = jsonencode({
     "Version" : "2012-10-17",
@@ -95,13 +122,13 @@ resource "aws_iam_role" "irsa" {
       {
         "Effect" : "Allow",
         "Principal" : {
-          "Federated" : var.eks_oidc_provider_arn
+          "Federated" : local.oidc_arn
         },
         "Action" : "sts:AssumeRoleWithWebIdentity",
         "Condition" : {
           "StringLike" : {
-            "${local.eks_oidc_issuer_url}:sub" : "system:serviceaccount:${var.kubernetes_namespace}:${var.kubernetes_service_account}",
-            "${local.eks_oidc_issuer_url}:aud" : "sts.amazonaws.com"
+            "${local.oidc_arn}:sub" : "system:serviceaccount:${var.kubernetes_namespace}:${var.kubernetes_service_account}",
+            "${local.oidc_arn}:aud" : "sts.amazonaws.com"
           }
         }
       }
@@ -146,10 +173,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
   })
 }
 
-################################################################################
-# DynamoDB Table
-################################################################################
-
 module "generate_kms" {
   count  = local.generate_kms
   source = "github.com/defenseunicorns/terraform-aws-uds-kms?ref=v0.0.2"
@@ -159,7 +182,5 @@ module "generate_kms" {
   kms_key_alias_name_prefix = "${local.kms_key_alias_name_prefix}" # Prefix for KMS key alias.
   kms_key_deletion_window   = 7
   # Waiting period for scheduled KMS Key deletion. Can be 7-30 days.
-  tags = {
-    Deployment = "UDS DUBBD ${var.name_prefix}"
-  }
+  tags = var.tags
 }

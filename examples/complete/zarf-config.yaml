@@ -1,0 +1,33 @@
+package:
+  deploy:
+    set:
+      # -- Name of the EKS cluster
+      name_prefix: my-cluster
+      # -- AWS region
+      region: us-gov-east-1
+      # -- Name of existing Terraform state bucket
+      state_bucket_name: tfstate-backend-bucket-name
+      # -- Key path to EKS Terraform state file within the bucket
+      eks_state_key: eks-cluster/terraform.tfstate
+      # -- Name of DynamoDB table used for Terraform state locking
+      state_dynamodb_table_name: tfstate-backend-dynamodb
+      # -- Key path to IAC Terraform state file within the bucket. Needed for deployment with zarf pkg.
+      iac_state_key: s3-loki/terraform.tfstate
+      # -- Name of IRSA role to be created
+      irsa_iam_role_name: logging-loki
+      # -- Name of the IRSA policy to be created
+      irsa_policy_name: loki-irsa-policy
+      # -- Name of the kubernetes service account to be associated with the IRSA role
+      kubernetes_service_account: logging-loki
+      # -- Name of the kubernetes namespace to be associated with the IRSA role
+      kubernetes_namespace: logging
+      # -- Enable or disable S3 bucket deletion on terraform destroy
+      ephemeral: false
+      # -- Enable or disable S3 bucket deletion on terraform destroy
+      force_destroy: false
+      # -- Enable or disable KMS key creation for S3 bucket encryption
+      create_kms_key: true
+      # -- Bring your own kms key, if omitted a key will be created with an alias prefix of "<cluster name>-loki-"
+      #loki_kms_key_arn: "arn:aws:kms:us-west-2:000000000000:key/mrk-0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
+      # -- Bring your own kms key, if omitted a key will be created with an alias prefix of "<cluster name>-velero-"
+      #velero_kms_key_arn: "arn:aws:kms:us-west-2:000000000000:key/mrk-0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a"
