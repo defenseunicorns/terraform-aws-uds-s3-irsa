@@ -1,8 +1,7 @@
-variable "region" {
-  description = "AWS Region"
-  type        = string
-  // TODO: Evaluate whether "" is ever a valid value for this variable. Does this need to be a required variable with a validation that checks against a list of known regions?
-  default = ""
+variable "app" {
+  description = "Application name"
+  type        = list(string)
+  default     = ["my-app"]
 }
 
 variable "name_prefix" {
@@ -20,12 +19,6 @@ variable "irsa_iam_policies" {
   default     = []
 }
 
-variable "irsa_iam_role_name" {
-  type        = string
-  description = "IAM role name for IRSA"
-  default     = ""
-}
-
 variable "irsa_iam_role_path" {
   description = "IAM role path for IRSA roles"
   type        = string
@@ -38,40 +31,10 @@ variable "irsa_iam_permissions_boundary" {
   default     = ""
 }
 
-# variable "eks_oidc_provider_arn" {
-#   description = "EKS OIDC Provider ARN e.g., arn:aws:iam::<ACCOUNT-ID>:oidc-provider/<var.eks_oidc_provider>"
-#   type        = string
-# }
-
 variable "tags" {
   description = "A map of tags to apply to all resources"
   type        = map(string)
   default     = {}
-}
-
-variable "kubernetes_namespace" {
-  description = "Kubernetes namespace for IRSA"
-  type        = string
-  default     = "default"
-}
-
-variable "kubernetes_service_account" {
-  description = "Kubernetes service account for IRSA"
-  type        = string
-  default     = "default"
-}
-
-// TODO: Evaluate whether we need this to be a variable
-variable "irsa_policy_name" {
-  description = "IRSA IAM Policy name"
-  type        = string
-  default     = "s3-irsa-policy"
-}
-
-variable "dynamodb_enabled" {
-  description = "Is dynamoDB enabled"
-  type        = bool
-  default     = false
 }
 
 variable "access_logging_enabled" {
@@ -96,12 +59,6 @@ variable "force_destroy" {
   description = "If true, destroys all objects in the bucket when the bucket is destroyed so that the bucket can be destroyed without error. Objects that are destroyed in this way are NOT recoverable."
   type        = bool
   default     = false
-}
-
-variable "create_kms_key" {
-  description = "If true, create a KMS key for the bucket"
-  type        = bool
-  default     = true
 }
 
 variable "iam_role_permissions_boundary" {

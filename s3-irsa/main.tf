@@ -23,25 +23,44 @@ terraform {
 }
 
 locals {
-  # eks_oidc_issuer_url = replace(var.eks_oidc_provider_arn, "/^(.*provider/)/", "")
-  kms_key_alias_name_prefix  = "alias/${var.name_prefix}-${lower(random_id.default.hex)}"
-  generate_kms = var.create_kms_key ? 1 : 0
+  app_config = {
+    "loki"   = {
+      kubernetes_service_account = "logging-loki"
+      kubernetes_namespace      = "logging"
+      irsa_iam_role_name        = "loki-irsa-role"
+      irsa_policy_name          = "loki-irsa-policy"
+    }
+    "velero" = {
+      kubernetes_service_account = "velero-velero-server"
+      kubernetes_namespace      = "velero"
+      irsa_iam_role_name        = "velero-irsa-role"
+      irsa_policy_name          = "velero-irsa-policy"
+    }
+    # Add more app configurations as needed
+  }
+
+  app_config_values = [for app_name in var.app : local.app_config[app_name] ]
+  kms_key_alias_name_prefix = [
+    for app_name in var.app :
+    "alias/${var.name_prefix}-${app_name}-${lower(random_id.default.hex)}"
+  ]
   oidc_url_without_protocol = substr(data.aws_eks_cluster.existing.identity[0].oidc[0].issuer, 8, -1)
   oidc_arn                  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_url_without_protocol}"
-  irsa_iam_role_name            = "${data.terraform_remote_state.eks_cluster.outputs.eks_cluster_name}-${var.irsa_iam_role_name}"
+  irsa_iam_role_name           = [
+    for app_config in local.app_config_values :
+    "${data.terraform_remote_state.eks_cluster.outputs.eks_cluster_name}-${app_config.irsa_iam_role_name}"
+    ]
   irsa_iam_permissions_boundary = var.iam_role_permissions_boundary
-  # eks_oidc_provider_arn         = data.terraform_remote_state.eks_cluster.outputs.eks_oidc_provider_arn
-
 }
-
 
 #####################################################
 #################### S3 Bucket ######################
 module "s3_bucket" {
+  count = length(local.app_config_values)  
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "v3.15.1"
 
-  bucket_prefix           = var.name_prefix
+  bucket_prefix           = "${var.name_prefix}-${var.app[count.index]}"
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -64,16 +83,18 @@ resource "random_id" "default" {
 }
 
 resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = module.s3_bucket.s3_bucket_id
+  count = length(local.app_config_values)
+
+  bucket        = module.s3_bucket[count.index].s3_bucket_id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 resource "aws_s3_bucket_logging" "logging" {
-  count = var.access_logging_enabled ? 1 : 0
+  count = var.access_logging_bucket_id != null ? length(local.app_config_values) : 0
 
-  bucket        = module.s3_bucket.s3_bucket_id
+  bucket        = module.s3_bucket[count.index].s3_bucket_id
   target_bucket = var.access_logging_bucket_id
   target_prefix = var.access_logging_bucket_prefix
 
@@ -88,13 +109,15 @@ resource "aws_s3_bucket_logging" "logging" {
 }
 
 data "aws_iam_policy_document" "irsa_policy" {
+  count = length(local.app_config_values)
+
   statement {
     actions   = ["s3:ListBucket"]
-    resources = [module.s3_bucket.s3_bucket_arn]
+    resources = [module.s3_bucket[count.index].s3_bucket_arn]
   }
   statement {
     actions   = ["s3:*Object"]
-    resources = ["${module.s3_bucket.s3_bucket_arn}/*"]
+    resources = ["${module.s3_bucket[count.index].s3_bucket_arn}/*"]
   }
   statement {
     actions = [
@@ -106,16 +129,18 @@ data "aws_iam_policy_document" "irsa_policy" {
 }
 
 resource "aws_iam_policy" "irsa_policy" {
+  count = length(local.app_config_values)
+
   description = "IAM Policy for IRSA"
-  name_prefix = "${var.name_prefix}-${var.irsa_policy_name}"
-  policy      = data.aws_iam_policy_document.irsa_policy.json
+  name_prefix = "${var.name_prefix}-${local.app_config_values[count.index].irsa_policy_name}"
+  policy      = data.aws_iam_policy_document.irsa_policy[count.index].json
 }
 
 resource "aws_iam_role" "irsa" {
-  count = var.irsa_iam_policies != null ? 1 : 0
+  count = var.irsa_iam_policies != null ? length(local.app_config_values) : 0
 
-  name        = try(coalesce(local.irsa_iam_role_name, format("%s-%s-%s", var.name_prefix, trim(var.kubernetes_service_account, "-*"), "irsa")), null)
-  description = "AWS IAM Role for the Kubernetes service account ${var.kubernetes_service_account}."
+  name        = element(local.irsa_iam_role_name, count.index)
+  description = "AWS IAM Role for the Kubernetes service account ${local.app_config_values[count.index].kubernetes_service_account}."
   assume_role_policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -127,7 +152,7 @@ resource "aws_iam_role" "irsa" {
         "Action" : "sts:AssumeRoleWithWebIdentity",
         "Condition" : {
           "StringLike" : {
-            "${local.oidc_arn}:sub" : "system:serviceaccount:${var.kubernetes_namespace}:${var.kubernetes_service_account}",
+            "${local.oidc_arn}:sub" : "system:serviceaccount:${local.app_config_values[count.index].kubernetes_namespace}:${local.app_config_values[count.index].kubernetes_service_account}",
             "${local.oidc_arn}:aud" : "sts.amazonaws.com"
           }
         }
@@ -142,14 +167,15 @@ resource "aws_iam_role" "irsa" {
 }
 
 resource "aws_iam_role_policy_attachment" "irsa" {
+  count = length(local.app_config_values)
 
-  policy_arn = aws_iam_policy.irsa_policy.arn
-  role       = aws_iam_role.irsa[0].name
+  policy_arn = aws_iam_policy.irsa_policy[count.index].arn
+  role       = aws_iam_role.irsa[count.index].name
 }
 
 resource "aws_s3_bucket_policy" "bucket_policy" {
-  # count  = local.create_bucket_policy ? 1 : 0
-  bucket = module.s3_bucket.s3_bucket_id
+  count = length(local.app_config_values)
+  bucket = module.s3_bucket[count.index].s3_bucket_id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -165,8 +191,8 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
           AWS = aws_iam_role.irsa[0].arn
         }
         Resource = [
-          module.s3_bucket.s3_bucket_arn,
-          "${module.s3_bucket.s3_bucket_arn}/*"
+          module.s3_bucket[count.index].s3_bucket_arn,
+          "${module.s3_bucket[count.index].s3_bucket_arn}/*"
         ]
       }
     ]
@@ -174,12 +200,12 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 }
 
 module "generate_kms" {
-  count  = local.generate_kms
+  count = length(local.app_config_values)
   source = "github.com/defenseunicorns/terraform-aws-uds-kms?ref=v0.0.2"
 
   key_owners = var.key_owner_arns
   # A list of IAM ARNs for those who will have full key permissions (`kms:*`)
-  kms_key_alias_name_prefix = "${local.kms_key_alias_name_prefix}" # Prefix for KMS key alias.
+  kms_key_alias_name_prefix = element(local.kms_key_alias_name_prefix, count.index)
   kms_key_deletion_window   = 7
   # Waiting period for scheduled KMS Key deletion. Can be 7-30 days.
   tags = var.tags

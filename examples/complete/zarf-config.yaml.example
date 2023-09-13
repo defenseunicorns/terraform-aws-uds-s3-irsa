@@ -1,0 +1,21 @@
+package:
+  deploy:
+    set:
+      # -- Name of application
+      app: "[\"loki\",\"velero\"]"
+      # -- Name of the EKS cluster
+      name_prefix: my-cluster
+      # -- AWS region
+      region: us-gov-east-1
+      # -- Name of existing Terraform state bucket
+      state_bucket_name: tfstate-backend-bucket-name
+      # -- Key path to EKS Terraform state file within the bucket
+      eks_state_key: eks-cluster/terraform.tfstate
+      # -- Name of DynamoDB table used for Terraform state locking
+      state_dynamodb_table_name: tfstate-backend-dynamodb
+      # -- Key path to IAC Terraform state file within the bucket. Needed for deployment with zarf pkg.
+      iac_state_key: s3-loki/terraform.tfstate
+      # -- Enable or disable S3 bucket deletion on terraform destroy
+      ephemeral: false
+      # -- Enable or disable S3 bucket deletion on terraform destroy
+      force_destroy: false
