@@ -14,7 +14,7 @@ package:
       # -- Name of DynamoDB table used for Terraform state locking
       state_dynamodb_table_name: tfstate-backend-dynamodb
       # -- Key path to IAC Terraform state file within the bucket. Needed for deployment with zarf pkg.
-      iac_state_key: s3-loki/terraform.tfstate
+      iac_state_key: s3-irsa/terraform.tfstate
       # -- Enable or disable S3 bucket deletion on terraform destroy
       ephemeral: false
       # -- Enable or disable S3 bucket deletion on terraform destroy
