@@ -22,8 +22,8 @@ variables:
     default: "v0.27.0"
   - name: STATE_BUCKET_NAME
     description: "Name of the pre-existing Terraform state S3 bucket"
-  - name: EKS_STATE_KEY
-    description: "Path to the eks state file key in the state bucket"
+  # - name: EKS_STATE_KEY
+  #   description: "Path to the eks state file key in the state bucket"
   - name: IAC_STATE_KEY
     description: "Path to the IAC state file key created from this pkg"
   - name: STATE_DYNAMODB_TABLE_NAME
@@ -122,19 +122,12 @@ components:
               else
                 echo "Skipping remove, force_destroy is set to false"
               fi
-  # - name: terraform-outputs
-  #   required: true
-  #   actions:
-  #     onDeploy:
-  #       defaults:
-  #         dir: s3-irsa/
-  #       after:
-  #         - cmd: ./terraform output -raw s3_bucket
-  #           setVariables:
-  #             - name: S3_BUCKET
-  #         - cmd: ./terraform output -raw region
-  #           setVariables:
-  #             - name: S3_AWS_REGION
-  #         - cmd: ./terraform output -raw irsa_role_arn
-  #           setVariables:
-  #             - name: S3_IRSA_ROLE_ARN
+  - name: terraform-outputs
+    required: true
+    actions:
+      onDeploy:
+        defaults:
+          dir: s3-irsa/
+        after:
+          - cmd: ./terraform output s3_bucket > s3_bucket.txt
+          - cmd: ./terraform output irsa_role_arn > s3_irsa_role_arn.txt

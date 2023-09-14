@@ -1,5 +1,5 @@
 data "aws_eks_cluster" "existing" {
-  name = var.name_prefix
+  name = var.name
 }
 
 data "aws_caller_identity" "current" {}
@@ -8,14 +8,14 @@ data "aws_partition" "current" {}
 
 data "aws_region" "current" {}
 
-data "terraform_remote_state" "eks_cluster" {
-  backend = "s3"
-  config = {
-    bucket = var.state_bucket_name
-    key    = var.eks_state_key
-    region = data.aws_region.current.name
-  }
-}
+# data "terraform_remote_state" "eks_cluster" {
+#   backend = "s3"
+#   config = {
+#     bucket = var.state_bucket_name
+#     key    = var.eks_state_key
+#     region = data.aws_region.current.name
+#   }
+# }
 
 terraform {
   backend "s3" {
@@ -42,14 +42,18 @@ locals {
   app_config_values = [for app_name in var.app : local.app_config[app_name] ]
   kms_key_alias_name_prefix = [
     for app_name in var.app :
-    "alias/${var.name_prefix}-${app_name}-${lower(random_id.default.hex)}"
+    "alias/${var.name}-${app_name}-${lower(random_id.default.hex)}"
   ]
   oidc_url_without_protocol = substr(data.aws_eks_cluster.existing.identity[0].oidc[0].issuer, 8, -1)
   oidc_arn                  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_url_without_protocol}"
   irsa_iam_role_name           = [
     for app_config in local.app_config_values :
-    "${data.terraform_remote_state.eks_cluster.outputs.eks_cluster_name}-${app_config.irsa_iam_role_name}"
+    "${var.name}-${app_config.irsa_iam_role_name}"
     ]
+  # irsa_iam_role_name           = [
+  #   for app_config in local.app_config_values :
+  #   "${data.terraform_remote_state.eks_cluster.outputs.eks_cluster_name}-${app_config.irsa_iam_role_name}"
+  #   ]
   irsa_iam_permissions_boundary = var.iam_role_permissions_boundary
 }
 
@@ -60,7 +64,7 @@ module "s3_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "v3.15.1"
 
-  bucket_prefix           = "${var.name_prefix}-${var.app[count.index]}"
+  bucket_prefix           = "${var.name}-${var.app[count.index]}"
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -132,7 +136,7 @@ resource "aws_iam_policy" "irsa_policy" {
   count = length(local.app_config_values)
 
   description = "IAM Policy for IRSA"
-  name_prefix = "${var.name_prefix}-${local.app_config_values[count.index].irsa_policy_name}"
+  name_prefix = "${var.name}-${local.app_config_values[count.index].irsa_policy_name}"
   policy      = data.aws_iam_policy_document.irsa_policy[count.index].json
 }
 

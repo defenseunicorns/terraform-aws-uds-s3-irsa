@@ -10,7 +10,7 @@ package:
       # -- Name of existing Terraform state bucket
       state_bucket_name: tfstate-backend-bucket-name
       # -- Key path to EKS Terraform state file within the bucket
-      eks_state_key: eks-cluster/terraform.tfstate
+      # eks_state_key: eks-cluster/terraform.tfstate
       # -- Name of DynamoDB table used for Terraform state locking
       state_dynamodb_table_name: tfstate-backend-dynamodb
       # -- Key path to IAC Terraform state file within the bucket. Needed for deployment with zarf pkg.

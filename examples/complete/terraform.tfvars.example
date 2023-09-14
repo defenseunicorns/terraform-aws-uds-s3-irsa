@@ -11,6 +11,6 @@ name_prefix = "my-cluster"
 # -- Name of existing Terraform state bucket
 state_bucket_name = "my-tfstate-backend-s3-bucket"
 # -- Key path to Terraform state file within the bucket
-eks_state_key = "aws-eks/terraform.tfstate"
+# eks_state_key = "aws-eks/terraform.tfstate"
 # -- Provision a private/internal load balancer for the admin ingress gateway, if false a public load balancer will be provisioned
 force_destroy = false

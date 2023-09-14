@@ -1,14 +1,14 @@
 variable "app" {
-  description = "Application name"
+  description = "Application name for S3 bucket to be created (i.e. loki, velero, etc.)"
   type        = list(string)
   default     = ["my-app"]
 }
 
-variable "name_prefix" {
-  description = "Name prefix for all resources that use a randomized suffix"
+variable "name" {
+  description = "Name prefix for all resources that use a randomized suffix. Usually the name of the EKS cluster"
   type        = string
   validation {
-    condition     = length(var.name_prefix) <= 37
+    condition     = length(var.name) <= 37
     error_message = "Name Prefix may not be longer than 37 characters."
   }
 }
