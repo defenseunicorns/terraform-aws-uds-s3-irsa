@@ -4,7 +4,7 @@ package:
       # -- Name of application
       app: "[\"loki\",\"velero\"]"
       # -- Name of the EKS cluster
-      name_prefix: my-cluster
+      name: my-cluster
       # -- AWS region
       region: us-gov-east-1
       # -- Name of existing Terraform state bucket
