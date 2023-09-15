@@ -5,6 +5,8 @@ outputs:
   latest-package-version:
     description: The latest zarf package version
     value: ${{ steps.latest-package-version.outputs.latest-package-version }}
+
+inputs:
   download-init-package: 
     description: Include Zarf init package
     required: false
