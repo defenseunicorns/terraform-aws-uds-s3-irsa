@@ -2,7 +2,9 @@ kind: ZarfPackageConfig
 metadata:
   name: terraform-aws-s3-irsa
   description: "Terraform module to create an S3 bucket with IRSA enabled"
-  version: "0.0.1"
+  # x-release-please-start-version
+  version: "0.1.0"
+  # x-release-please-end
   architecture: amd64
   source: https://github.com/defenseunicorns/terraform-aws-uds-s3-irsa
   documentation: https://github.com/defenseunicorns/terraform-aws-uds-s3-irsa
