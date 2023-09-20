@@ -147,3 +147,12 @@ components:
           - cmd: ./terraform output irsa_role_arn | grep velero | sed 's/ //g; s/"//g; s/,//g'
             setVariables: 
               - name: VELERO_S3_IRSA_ROLE_ARN
+  - name: terraform-outputs-text
+    required: true
+    actions:
+      onDeploy:
+        defaults:
+          dir: s3-irsa/
+        after:
+          - cmd: ./terraform output s3_bucket > s3_bucket.txt
+          - cmd: ./terraform output irsa_role_arn > s3_irsa_role_arn.txt
