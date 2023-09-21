@@ -114,6 +114,8 @@ components:
           - cmd: ./terraform plan
           - cmd: sleep 15 #time to review
           - cmd: ./terraform apply -auto-approve
+          - cmd: ./terraform apply -auto-approve
+          - cmd: ./terraform apply -auto-approve
       onRemove:
         defaults:
           dir: s3-irsa/
