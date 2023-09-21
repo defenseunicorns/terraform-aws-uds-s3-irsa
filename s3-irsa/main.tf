@@ -86,6 +86,17 @@ resource "random_id" "default" {
   byte_length = 2
 }
 
+resource "null_resource" "versioning_delay" {
+  count = length(local.app_config_values)
+
+  triggers = {
+    bucket_name = module.s3_bucket[count.index].s3_bucket_id
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 15" # Sleep for 15 seconds (adjust as needed)
+  }
+}
 resource "aws_s3_bucket_versioning" "versioning" {
   count = length(local.app_config_values)
 
@@ -93,6 +104,7 @@ resource "aws_s3_bucket_versioning" "versioning" {
   versioning_configuration {
     status = "Enabled"
   }
+  depends_on = [null_resource.versioning_delay[count.index]]
 }
 
 resource "aws_s3_bucket_logging" "logging" {
