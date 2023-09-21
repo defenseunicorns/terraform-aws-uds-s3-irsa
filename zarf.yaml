@@ -113,6 +113,7 @@ components:
               -backend-config="dynamodb_table=${ZARF_VAR_STATE_DYNAMODB_TABLE_NAME}"
           - cmd: ./terraform plan
           - cmd: sleep 15 #time to review
+          - cmd: ./terraform apply -auto-approve
         onFailure:
           - cmd: ./terraform apply -auto-approve
       onRemove:
