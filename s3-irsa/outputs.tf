@@ -12,3 +12,7 @@ output "region" {
   description = "AWS Region"
   value       = data.aws_region.current.name
 }
+
+output "force_destroy" {
+  value = var.force_destroy
+}

@@ -3,7 +3,7 @@ metadata:
   name: terraform-aws-s3-irsa
   description: "Terraform module to create an S3 bucket with IRSA enabled"
   # x-release-please-start-version
-  version: "0.1.0"
+  version: "0.1.1"
   # x-release-please-end
   architecture: amd64
   source: https://github.com/defenseunicorns/terraform-aws-uds-s3-irsa
@@ -58,9 +58,9 @@ components:
     actions:
       onDeploy:
         after:
-          # - cmd: |
-          #     rm -f run/loki/terraform || true
-          #   description: Clean up previous install since archiver doesn't overwrite the output
+          - cmd: |
+              rm -f ./s3-irsa/terraform || true
+            description: Clean up previous install since archiver doesn't overwrite the output
           - cmd: "./s3-irsa/extract-terraform.sh ###ZARF_PKG_TMPL_TERRAFORM_VERSION### ###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###"
           # - cmd: rm -rf tmp
     files:
@@ -125,6 +125,7 @@ components:
               else
                 echo "Skipping remove, force_destroy is set to false"
               fi
+            maxRetries: 3
   - name: terraform-outputs
     required: true
     actions:
