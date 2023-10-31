@@ -6,8 +6,8 @@ metadata:
   version: "0.1.2"
   # x-release-please-end
   architecture: amd64
-  source: https://github.com/defenseunicorns/terraform-aws-uds-s3-irsa
-  documentation: https://github.com/defenseunicorns/terraform-aws-uds-s3-irsa
+  source: https://github.com/defenseunicorns/terraform-aws-s3-irsa
+  documentation: https://github.com/defenseunicorns/terraform-aws-s3-irsa
   vendor: Defense Unicorns
 
 variables:
