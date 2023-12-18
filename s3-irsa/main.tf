@@ -24,32 +24,32 @@ terraform {
 
 locals {
   app_config = {
-    "loki"   = {
+    "loki" = {
       kubernetes_service_account = "logging-loki"
-      kubernetes_namespace      = "logging"
-      irsa_iam_role_name        = "loki-irsa-role"
-      irsa_policy_name          = "loki-irsa-policy"
+      kubernetes_namespace       = "logging"
+      irsa_iam_role_name         = "loki-irsa-role"
+      irsa_policy_name           = "loki-irsa-policy"
     }
     "velero" = {
       kubernetes_service_account = "velero-velero-server"
-      kubernetes_namespace      = "velero"
-      irsa_iam_role_name        = "velero-irsa-role"
-      irsa_policy_name          = "velero-irsa-policy"
+      kubernetes_namespace       = "velero"
+      irsa_iam_role_name         = "velero-irsa-role"
+      irsa_policy_name           = "velero-irsa-policy"
     }
     # Add more app configurations as needed
   }
 
-  app_config_values = [for app_name in var.app : local.app_config[app_name] ]
+  app_config_values = [for app_name in var.app : local.app_config[app_name]]
   kms_key_alias_name_prefix = [
     for app_name in var.app :
     "alias/${var.name}-${app_name}-${lower(random_id.default.hex)}"
   ]
   oidc_url_without_protocol = substr(data.aws_eks_cluster.existing.identity[0].oidc[0].issuer, 8, -1)
   oidc_arn                  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_url_without_protocol}"
-  irsa_iam_role_name           = [
+  irsa_iam_role_name = [
     for app_config in local.app_config_values :
     "${var.name}-${app_config.irsa_iam_role_name}"
-    ]
+  ]
   # irsa_iam_role_name           = [
   #   for app_config in local.app_config_values :
   #   "${data.terraform_remote_state.eks_cluster.outputs.eks_cluster_name}-${app_config.irsa_iam_role_name}"
@@ -60,7 +60,7 @@ locals {
 #####################################################
 #################### S3 Bucket ######################
 module "s3_bucket" {
-  count = length(local.app_config_values)  
+  count   = length(local.app_config_values)
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "v3.15.1"
 
@@ -89,7 +89,7 @@ resource "random_id" "default" {
 resource "aws_s3_bucket_versioning" "versioning" {
   count = length(local.app_config_values)
 
-  bucket        = module.s3_bucket[count.index].s3_bucket_id
+  bucket = module.s3_bucket[count.index].s3_bucket_id
   versioning_configuration {
     status = "Enabled"
   }
@@ -178,7 +178,7 @@ resource "aws_iam_role_policy_attachment" "irsa" {
 }
 
 resource "aws_s3_bucket_policy" "bucket_policy" {
-  count = length(local.app_config_values)
+  count  = length(local.app_config_values)
   bucket = module.s3_bucket[count.index].s3_bucket_id
 
   policy = jsonencode({
@@ -204,7 +204,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 }
 
 module "generate_kms" {
-  count = length(local.app_config_values)
+  count  = length(local.app_config_values)
   source = "github.com/defenseunicorns/terraform-aws-uds-kms?ref=v0.0.2"
 
   key_owners = var.key_owner_arns

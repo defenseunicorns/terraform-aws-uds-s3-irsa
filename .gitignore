@@ -1,16 +1,17 @@
+.cache/
 .idea/
 .DS_Store
+.vscode
+
 
 # Local .terraform directories
-**/.terraform/*
+.terraform/
 *.terraform.*
-
 # .tfstate files
 *.tfstate
 *.tfstate.*
 
-# zarf package files
-*.zst
+*.terraform.lock.hcl
 
 # Crash log files
 crash.log
@@ -20,8 +21,14 @@ crash.*.log
 # password, private keys, and other secrets. These should not be part of version
 # control as they are data points which are potentially sensitive and subject
 # to change depending on the environment.
-# *.tfvars
+*.tfvars
 *.tfvars.json
+
+# Except ones that we do want to commit because they are used for automated tests
+!examples/complete/fixtures.common.tfvars
+!examples/complete/fixtures.insecure.tfvars
+!examples/complete/fixtures.secure.tfvars
+!modules/cloudtrail/examples/complete/fixtures.create-bucket.tfvars
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in
@@ -43,8 +50,14 @@ terraform.rc
 # Ignore Terraform cache
 .terragrunt-cache*
 
-# Ignore terraform.tfvars
-*.tfvars
+# Ignore Terraform state files
+backend.tf
 
-#ignore lambda builds
-**/builds/
+# Ignore Checkov external module downloads
+.external_modules
+
+examples/zarf-complete-example/build
+
+#ignore lamba builds json file created from deploying lambda resource
+
+**/ignore

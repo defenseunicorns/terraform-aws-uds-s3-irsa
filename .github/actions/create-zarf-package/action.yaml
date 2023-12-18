@@ -7,7 +7,7 @@ outputs:
     value: ${{ steps.latest-package-version.outputs.latest-package-version }}
 
 inputs:
-  download-init-package: 
+  download-init-package:
     description: Include Zarf init package
     required: false
 

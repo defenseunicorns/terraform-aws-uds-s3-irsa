@@ -134,20 +134,20 @@ components:
           dir: s3-irsa/
         after:
           - cmd: ./terraform output s3_bucket | grep loki | sed 's/ //g; s/"//g; s/,//g'
-            setVariables: 
+            setVariables:
               - name: LOKI_S3_BUCKET
           - cmd: ./terraform output irsa_role_arn | grep loki | sed 's/ //g; s/"//g; s/,//g'
-            setVariables: 
+            setVariables:
               - name: LOKI_S3_IRSA_ROLE_ARN
           - cmd: ./terraform output region
-            setVariables: 
+            setVariables:
               - name: LOKI_S3_AWS_REGION
               - name: VELERO_S3_AWS_REGION
           - cmd: ./terraform output s3_bucket | grep velero | sed 's/ //g; s/"//g; s/,//g'
-            setVariables: 
+            setVariables:
               - name: VELERO_S3_BUCKET
           - cmd: ./terraform output irsa_role_arn | grep velero | sed 's/ //g; s/"//g; s/,//g'
-            setVariables: 
+            setVariables:
               - name: VELERO_S3_IRSA_ROLE_ARN
   - name: terraform-outputs-text
     required: true
