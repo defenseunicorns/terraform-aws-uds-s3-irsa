@@ -114,12 +114,6 @@ components:
           dir: s3-irsa/
         before:
           - cmd: |
-              ./terraform init \
-              -backend-config="bucket=${ZARF_VAR_STATE_BUCKET_NAME}" \
-              -backend-config="key=${ZARF_VAR_IAC_STATE_KEY}" \
-              -backend-config="region=${ZARF_VAR_REGION}" \
-              -backend-config="dynamodb_table=${ZARF_VAR_STATE_DYNAMODB_TABLE_NAME}"
-          - cmd: |
               if [ "$(./terraform output force_destroy)" = true ]; then
                 ./terraform destroy -auto-approve
               else
