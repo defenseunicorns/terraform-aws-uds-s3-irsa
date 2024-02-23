@@ -115,7 +115,7 @@ components:
         before:
           - cmd: |
               if [ "$(./terraform output force_destroy)" = true ]; then
-                ./terraform destroy -auto-approve
+                ./terraform destroy -var NAME=${ZARF_VAR_NAME} -auto-approve
               else
                 echo "Skipping remove, force_destroy is set to false"
               fi
