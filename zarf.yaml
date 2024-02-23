@@ -18,7 +18,7 @@ variables:
     description: "Name of the application i.e. loki, velero, gitlab"
   - name: REGION
     description: "target AWS region"
-  - name: NAME_PREFIX
+  - name: NAME
     description: "Name of the target cluster"
   - name: ZARF_VERSION
     default: "v0.32.3"
