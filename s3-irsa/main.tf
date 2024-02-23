@@ -25,8 +25,8 @@ terraform {
 locals {
   app_config = {
     "loki"   = {
-      kubernetes_service_account = "logging-loki"
-      kubernetes_namespace      = "logging"
+      kubernetes_service_account = "loki"
+      kubernetes_namespace      = "loki"
       irsa_iam_role_name        = "loki-irsa-role"
       irsa_policy_name          = "loki-irsa-policy"
     }
