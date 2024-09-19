@@ -18,9 +18,13 @@ runs:
       uses: defenseunicorns/setup-zarf@main
       with:
         # renovate: datasource=github-tags depName=defenseunicorns/zarf versioning=semver
-        version: v0.32.3
+        version: v0.39.0
         download-init-package: ${{ inputs.download-init-package }}
-
-    - name: Create Zarf Package
-      shell: bash
-      run: zarf package create --confirm
+    - name: load build harness
+      shell: bash -e -o pipefail {0}
+      run: |
+        make +docker-load-build-harness
+        zarf package create --confirm
+    # - name: Create Zarf Package
+    #   shell: bash
+    #   run: zarf package create --confirm
