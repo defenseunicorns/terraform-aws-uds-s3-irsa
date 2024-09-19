@@ -3,7 +3,7 @@ metadata:
   name: terraform-aws-s3-irsa
   description: "Terraform module to create an S3 bucket with IRSA enabled"
   # x-release-please-start-version
-  version: "0.1.3"
+  version: "0.1.4"
   # x-release-please-end
   architecture: amd64
   source: https://github.com/defenseunicorns/terraform-aws-uds-s3-irsa
@@ -11,9 +11,6 @@ metadata:
   vendor: Defense Unicorns
 
 variables:
-  - name: TERRAFORM_VERSION
-  - name: TERRAFORM_PROVIDER_AWS_VERSION
-
   - name: APP
     description: "Name of the application i.e. loki, velero, gitlab"
   - name: REGION
@@ -21,7 +18,7 @@ variables:
   - name: NAME
     description: "Name of the target cluster"
   - name: ZARF_VERSION
-    default: "v0.32.3"
+    default: "v0.39.0"
   - name: STATE_BUCKET_NAME
     description: "Name of the pre-existing Terraform state S3 bucket"
   - name: IAC_STATE_KEY
@@ -51,50 +48,22 @@ components:
             setVariables:
               - name: FORCE_DESTROY
 
-  - name: download-terraform
+  - name: tofu-init
     required: true
-    actions:
-      onDeploy:
-        after:
-          - cmd: |
-              rm -f ./s3-irsa/terraform || true
-            description: Clean up previous install since archiver doesn't overwrite the output
-          - cmd: "./s3-irsa/extract-terraform.sh ###ZARF_PKG_TMPL_TERRAFORM_VERSION### ###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###"
-          - cmd: rm -rf tmp/ s3-irsa/.terraform s3-irsa/.terraform.lock.hcl
-    files:
-      - source: ./s3-irsa/extract.sh
-        target: ./s3-irsa/extract-terraform.sh
-        executable: true
-      # terraform binary into zarf package
-      - source: https://releases.hashicorp.com/terraform/###ZARF_PKG_TMPL_TERRAFORM_VERSION###/terraform_###ZARF_PKG_TMPL_TERRAFORM_VERSION###_darwin_arm64.zip
-        target: tmp/terraform_###ZARF_PKG_TMPL_TERRAFORM_VERSION###_darwin_arm64.zip
-      - source: https://releases.hashicorp.com/terraform/###ZARF_PKG_TMPL_TERRAFORM_VERSION###/terraform_###ZARF_PKG_TMPL_TERRAFORM_VERSION###_darwin_amd64.zip
-        target: tmp/terraform_###ZARF_PKG_TMPL_TERRAFORM_VERSION###_darwin_amd64.zip
-      - source: https://releases.hashicorp.com/terraform/###ZARF_PKG_TMPL_TERRAFORM_VERSION###/terraform_###ZARF_PKG_TMPL_TERRAFORM_VERSION###_linux_amd64.zip
-        target: tmp/terraform_###ZARF_PKG_TMPL_TERRAFORM_VERSION###_linux_amd64.zip
-      - source: https://releases.hashicorp.com/terraform-provider-aws/###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###/terraform-provider-aws_###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###_darwin_arm64.zip
-        target: tmp/terraform-provider-aws_###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###_darwin_arm64.zip
-      - source: https://releases.hashicorp.com/terraform-provider-aws/###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###/terraform-provider-aws_###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###_darwin_amd64.zip
-        target: tmp/terraform-provider-aws_###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###_darwin_amd64.zip
-      - source: https://releases.hashicorp.com/terraform-provider-aws/###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###/terraform-provider-aws_###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###_linux_amd64.zip
-        target: tmp/terraform-provider-aws_###ZARF_PKG_TMPL_TERRAFORM_PROVIDER_AWS_VERSION###_linux_amd64.zip
-
-  - name: terraform-init
-    required: true
-    description: Terraform init using zarf actions
+    description: Tofu init using zarf actions
     actions:
       onCreate:
         defaults:
           maxTotalSeconds: 300
           maxRetries: 3
         before:
-          - cmd: "terraform init -backend=false"
+          - cmd: "tofu init -backend=false"
             dir: ./s3-irsa
     files:
       - source: ./s3-irsa/
         target: ./s3-irsa/
 
-  - name: execute-terraform
+  - name: execute-tofu
     required: true
     actions:
       onDeploy:
@@ -102,53 +71,55 @@ components:
           dir: s3-irsa/
         before:
           - cmd: |
-              ./terraform init -force-copy \
+              tofu init -force-copy \
               -backend-config="bucket=${ZARF_VAR_STATE_BUCKET_NAME}" \
               -backend-config="key=${ZARF_VAR_IAC_STATE_KEY}" \
               -backend-config="region=${ZARF_VAR_REGION}" \
               -backend-config="dynamodb_table=${ZARF_VAR_STATE_DYNAMODB_TABLE_NAME}"
-          - cmd: ./terraform apply -auto-approve
+          - cmd: tofu apply -auto-approve
             maxRetries: 3
       onRemove:
         defaults:
           dir: s3-irsa/
         before:
           - cmd: |
-              if [ "$(./terraform output force_destroy)" = true ]; then
-                ./terraform destroy -auto-approve
+              if [ "$(tofu output force_destroy)" = true ]; then
+                tofu destroy -auto-approve
               else
                 echo "Skipping remove, force_destroy is set to false"
               fi
             maxRetries: 3
-  - name: terraform-outputs
+
+  - name: tofu-outputs
     required: true
     actions:
       onDeploy:
         defaults:
           dir: s3-irsa/
         after:
-          - cmd: ./terraform output s3_bucket | grep loki | sed 's/ //g; s/"//g; s/,//g'
+          - cmd: tofu output s3_bucket | grep loki | sed 's/ //g; s/"//g; s/,//g'
             setVariables: 
               - name: LOKI_S3_BUCKET
-          - cmd: ./terraform output irsa_role_arn | grep loki | sed 's/ //g; s/"//g; s/,//g'
+          - cmd: tofu output irsa_role_arn | grep loki | sed 's/ //g; s/"//g; s/,//g'
             setVariables: 
               - name: LOKI_S3_IRSA_ROLE_ARN
-          - cmd: ./terraform output region
+          - cmd: tofu output region
             setVariables: 
               - name: LOKI_S3_AWS_REGION
               - name: VELERO_S3_AWS_REGION
-          - cmd: ./terraform output s3_bucket | grep velero | sed 's/ //g; s/"//g; s/,//g'
+          - cmd: tofu output s3_bucket | grep velero | sed 's/ //g; s/"//g; s/,//g'
             setVariables: 
               - name: VELERO_S3_BUCKET
-          - cmd: ./terraform output irsa_role_arn | grep velero | sed 's/ //g; s/"//g; s/,//g'
+          - cmd: tofu output irsa_role_arn | grep velero | sed 's/ //g; s/"//g; s/,//g'
             setVariables: 
               - name: VELERO_S3_IRSA_ROLE_ARN
-  - name: terraform-outputs-text
+
+  - name: tofu-outputs-text
     required: true
     actions:
       onDeploy:
         defaults:
           dir: s3-irsa/
         after:
-          - cmd: ./terraform output s3_bucket > s3_bucket.txt
-          - cmd: ./terraform output irsa_role_arn > s3_irsa_role_arn.txt
+          - cmd: tofu output s3_bucket > s3_bucket.txt
+          - cmd: tofu output irsa_role_arn > s3_irsa_role_arn.txt
