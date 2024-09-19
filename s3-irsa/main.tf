@@ -78,6 +78,7 @@ module "s3_bucket" {
         kms_master_key_id = module.generate_kms[0].kms_key_arn
         sse_algorithm     = "aws:kms"
       }
+      bucket_key_enabled  = true
     }
   }
 }
