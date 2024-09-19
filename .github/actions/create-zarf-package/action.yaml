@@ -23,8 +23,9 @@ runs:
     - name: load build harness
       shell: bash -e -o pipefail {0}
       run: |
+        make +docker-save-build-harness
         make +docker-load-build-harness
         zarf package create --confirm
-    # - name: Create Zarf Package
+    ## - name: Create Zarf Package
     #   shell: bash
     #   run: zarf package create --confirm
