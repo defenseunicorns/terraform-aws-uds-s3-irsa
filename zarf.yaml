@@ -57,7 +57,7 @@ components:
           maxTotalSeconds: 300
           maxRetries: 3
         before:
-          - cmd: "tofu init -backend=false"
+          - cmd: "/root/.asdf/shims/tofu init -backend=false"
             dir: ./s3-irsa
     files:
       - source: ./s3-irsa/
