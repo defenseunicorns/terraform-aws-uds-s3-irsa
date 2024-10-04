@@ -22,7 +22,7 @@ jobs:
 
   publish-package:
     permissions: write-all
-    # needs: tag-new-version
+    needs: tag-new-version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
