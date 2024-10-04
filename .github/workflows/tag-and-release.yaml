@@ -6,9 +6,26 @@ on:
       - main
 
 jobs:
+
+  get-buildharness-software-versions:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    outputs:
+      buildharness_version: ${{ steps.buildharness_software_versions.outputs.buildharness_version }}
+      golang_version: ${{ steps.buildharness_software_versions.outputs.golang_version }}
+      terraform_version: ${{ steps.buildharness_software_versions.outputs.terraform_version }}
+      zarf_version: ${{ steps.buildharness_software_versions.outputs.zarf_version }}
+    steps:
+      - name: Get buildharness software versions
+        id: buildharness_software_versions
+        uses: defenseunicorns/delivery-github-actions-workflows/.github/actions/get-buildharness-software-versions@main
+        with:
+          token: ${{ secrets.TOKEN }}
+        
   tag-new-version:
     permissions: write-all
     runs-on: ubuntu-latest
+    # Specify the Docker container image for the job
     outputs:
       release_created: ${{ steps.release-flag.outputs.release_created }}
     steps:
@@ -21,8 +38,7 @@ jobs:
         run: echo "release_created=${{ steps.tag.outputs.release_created || false }}" >> $GITHUB_OUTPUT
 
   publish-package:
-    permissions: write-all
-    needs: tag-new-version
+    needs: get-buildharness-software-versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -38,6 +54,6 @@ jobs:
           username: dummy
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Zarf Package
-        run: zarf package publish zarf-package-*.tar.zst oci://ghcr.io/defenseunicorns/terraform-packages
-        timeout-minutes: 60
+      # - name: Publish Zarf Package
+      #   run: zarf package publish zarf-package-*.tar.zst oci://ghcr.io/defenseunicorns/terraform-packages
+      #   timeout-minutes: 60
