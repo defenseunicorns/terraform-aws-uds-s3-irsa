@@ -21,6 +21,7 @@ jobs:
         run: echo "release_created=${{ steps.tag.outputs.release_created || false }}" >> $GITHUB_OUTPUT
 
   publish-package:
+    permissions: write-all
     needs: tag-new-version
     runs-on: ubuntu-latest
     steps:
