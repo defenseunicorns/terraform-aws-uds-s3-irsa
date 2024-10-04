@@ -29,7 +29,8 @@ ALL_THE_DOCKER_ARGS := -it --rm \
 	-e AWS_SECRET_ACCESS_KEY \
 	-e AWS_SESSION_TOKEN \
 	-e AWS_SECURITY_TOKEN \
-	-e AWS_SESSION_EXPIRATION 
+	-e AWS_SESSION_EXPIRATION \
+	${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
 
 # The current branch name
 BRANCH := $(shell git symbolic-ref --short HEAD)
@@ -338,6 +339,21 @@ _prereqs: #_# Run prerequisite checks
 	mkdir -p .cache/.terraform.d/plugin-cache
 	mkdir -p .cache/.zarf-cache
 
+.PHONY: +docker-save-build-harness
++docker-save-build-harness: +create-folders #+# Save the build-harness docker image to the .cache folder
+	docker pull ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+	docker save -o .cache/docker/build-harness.tar ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+
+.PHONY: +docker-load-build-harness
++docker-load-build-harness: #+# Load the build-harness docker image from the .cache folder
+	docker load -i .cache/docker/build-harness.tar
+
+.PHONY: +update-cache
++update-cache: +create-folders +docker-save-build-harness #+# Update the cache
+	docker run ${ALL_THE_DOCKER_ARGS} \
+		bash -c 'git config --global --add safe.directory /app \
+			&& pre-commit install --install-hooks \
+			&& (cd test/iac && terraform init)'
 
 .PHONY: +runhooks
 +runhooks: +create-folders #+# Helper "function" for running pre-commits
