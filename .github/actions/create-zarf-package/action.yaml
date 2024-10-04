@@ -1,10 +1,26 @@
 name: Create Zarf Package
 description: Creates a Zarf package for the requested path
 
+outputs:
+  latest-package-version:
+    description: The latest zarf package version
+    value: ${{ steps.latest-package-version.outputs.latest-package-version }}
+
+inputs:
+  download-init-package: 
+    description: Include Zarf init package
+    required: false
+
 runs:
   using: composite
   steps:
-    - name: load build harness
+    - name: Install Zarf
+      uses: defenseunicorns/setup-zarf@main
+      with:
+        # renovate: datasource=github-tags depName=defenseunicorns/zarf versioning=semver
+        version: v0.39.0
+        download-init-package: ${{ inputs.download-init-package }}
+    - name: zarf package create
       shell: bash -e -o pipefail {0}
-      run: |
-        zarf package create --confirm
+      run: zarf package create --confirm
+
