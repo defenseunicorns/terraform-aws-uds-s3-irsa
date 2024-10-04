@@ -22,10 +22,8 @@ jobs:
 
   publish-package:
     permissions: write-all
-    needs: tag-new-version
+    # needs: tag-new-version
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/defenseunicorns/build-harness/build-harness:2.0.39
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
