@@ -25,7 +25,7 @@ runs:
       run: |
         make +docker-save-build-harness
         make +docker-load-build-harness
-        export PATH=$PATH:/root/.asdf/shims
-        asdf reshim
         zarf package create --confirm
-
+    ## - name: Create Zarf Package
+    #   shell: bash
+    #   run: zarf package create --confirm
