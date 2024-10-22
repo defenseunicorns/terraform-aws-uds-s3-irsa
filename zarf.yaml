@@ -59,6 +59,9 @@ components:
         before:
           - cmd: "tofu init -backend=false"
             dir: ./s3-irsa
+      onDeploy:
+        before:
+          - cmd: rm -rf ./s3-irsa || true
     files:
       - source: ./s3-irsa/
         target: ./s3-irsa/
