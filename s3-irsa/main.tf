@@ -88,7 +88,7 @@ module "s3_bucket" {
 
   lifecycle_rule = [
     {
-      id      = "manage-versions"
+      id      = "manage-versions-and-storage-classes"
       enabled = true
 
       # Transition non-current (older) versions to Standard-IA after 60 days
@@ -112,10 +112,16 @@ module "s3_bucket" {
       id      = "cleanup-delete-markers"
       enabled = true
 
-      # Remove expired object delete markers
       expiration = {
         expired_object_delete_marker = true
+        days                         = 7
       }
+    },
+    {
+      id      = "cleanup-incomplete-multipart-uploads"
+      enabled = true
+
+      abort_incomplete_multipart_upload_days = 7
     }
   ]
 }
