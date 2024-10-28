@@ -93,13 +93,13 @@ module "s3_bucket" {
 
       # Transition non-current (older) versions to Standard-IA after 60 days
       noncurrent_version_transition = {
-        days          = 60
+        days          = 30
         storage_class = "STANDARD_IA"
       }
 
       # Further transition non-current versions to Glacier after 180 days
       noncurrent_version_transition = {
-        days          = 180
+        days          = 90
         storage_class = "GLACIER"
       }
 
