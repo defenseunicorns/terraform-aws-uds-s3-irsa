@@ -92,29 +92,22 @@ module "s3_bucket" {
       enabled = true
 
       # Transition non-current (older) versions to Standard-IA after 60 days
-      noncurrent_version_transition = {
-        days          = 30
-        storage_class = "STANDARD_IA"
-      }
+      noncurrent_version_transition = [
+        {
+          days          = 30
+          storage_class = "STANDARD_IA"
+        },
 
-      # Further transition non-current versions to Glacier after 180 days
-      noncurrent_version_transition = {
-        days          = 90
-        storage_class = "GLACIER"
-      }
+        # Further transition non-current versions to Glacier after 180 days
+        {
+          days          = 90
+          storage_class = "GLACIER"
+        },
+      ]
 
       # Permanently delete non-current versions after 365 days
       noncurrent_version_expiration = {
         days = 365
-      }
-    },
-    {
-      id      = "cleanup-delete-markers"
-      enabled = true
-
-      expiration = {
-        expired_object_delete_marker = true
-        days                         = 7
       }
     },
     {
