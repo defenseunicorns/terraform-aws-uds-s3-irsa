@@ -31,7 +31,7 @@ locals {
       irsa_policy_name           = "loki-irsa-policy"
     }
     "velero" = {
-      kubernetes_service_account = "velero-velero-server"
+      kubernetes_service_account = "velero-server"
       kubernetes_namespace       = "velero"
       irsa_iam_role_name         = "velero-irsa-role"
       irsa_policy_name           = "velero-irsa-policy"
@@ -220,7 +220,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         ]
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.irsa[0].arn
+          AWS = aws_iam_role.irsa[count.index].arn
         }
         Resource = [
           module.s3_bucket[count.index].s3_bucket_arn,
