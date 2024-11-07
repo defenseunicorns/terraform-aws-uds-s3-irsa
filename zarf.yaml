@@ -106,7 +106,7 @@ components:
           - cmd: tofu output irsa_role_arn | grep loki | sed 's/ //g; s/"//g; s/,//g'
             setVariables: 
               - name: LOKI_S3_IRSA_ROLE_ARN
-          - cmd: tofu output region
+          - cmd: tofu output region | sed 's/ //g; s/"//g; s/,//g'
             setVariables: 
               - name: LOKI_S3_AWS_REGION
               - name: VELERO_S3_AWS_REGION
