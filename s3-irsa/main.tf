@@ -62,7 +62,7 @@ locals {
 module "s3_bucket" {
   count   = length(local.app_config_values)
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "v4.2.1"
+  version = "v4.6.0"
 
   bucket_prefix           = "${var.name}-${var.app[count.index]}"
   block_public_acls       = true
@@ -233,7 +233,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 
 module "generate_kms" {
   count  = length(local.app_config_values)
-  source = "github.com/defenseunicorns/terraform-aws-uds-kms?ref=v0.0.2"
+  source = "github.com/defenseunicorns/terraform-aws-uds-kms?ref=v0.0.6"
 
   key_owners = var.key_owner_arns
   # A list of IAM ARNs for those who will have full key permissions (`kms:*`)
